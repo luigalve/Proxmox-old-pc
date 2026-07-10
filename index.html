@@ -1736,12 +1736,19 @@
 
     /* loadState runs once at startup (see the wire-up at the very
        bottom): it merges any saved progress over the defaults
-       above, then lets a URL like ?mode=browse skip the chooser.
-       saveState is called by every click handler right before
-       render(), so saved progress always matches the screen. */
+       above, then forgets the saved mode so the landing always
+       greets first. Position, ticks, and done steps all survive,
+       which turns the two mode cards into resume buttons: pick
+       one and you are back exactly where you left off. A link can
+       still skip the landing on purpose with ?mode=browse or
+       ?mode=handson, for sharing a deep link straight into the
+       app. saveState is called by every click handler right
+       before render(), so saved progress always matches the
+       screen. */
     function loadState() {
       const raw = store.get(NS + 'state');
       if (raw) { try { state = Object.assign(state, JSON.parse(raw)); } catch (e) { } }
+      state.mode = null;
       const p = new URLSearchParams(location.search).get('mode');
       if (p === 'browse' || p === 'handson') state.mode = p;
     }
