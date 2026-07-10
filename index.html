@@ -1,0 +1,2328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>One Step at a Time</title>
+  <!-- The script sets the real tab title from the project data at load,
+       so this file stays identical across every walkthrough app.
+       All styling lives in the one style block below. Comment rule that
+       bit us once: inside the style block use slash-star comments only;
+       an HTML-style comment in there silently eats the next rule. -->
+  <style>
+    :root {
+      --wash: #E9EDF1;
+      /* workbench surface */
+      --card: #FFFFFF;
+      /* index card */
+      --ink: #1C2B33;
+      /* text */
+      --ink-soft: #5A6B76;
+      /* secondary text */
+      --line: #D3DCE3;
+      /* hairlines */
+      --act: #2A5B8C;
+      /* interactive blue */
+      --act-soft: #E4EDF5;
+      --go: #1B7F4B;
+      /* completion green, used for nothing else */
+      --go-soft: #EEF6EF;
+      --amber: #C77A1F;
+      /* current-step LED and reset accents only */
+      --mono: ui-monospace, 'Cascadia Mono', Consolas, Menlo, monospace;
+      --serif: Charter, Georgia, 'Times New Roman', serif;
+      --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%
+    }
+
+    body {
+      background: var(--wash);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 16px;
+      line-height: 1.55;
+      min-height: 100vh
+    }
+
+    button {
+      font: inherit;
+      color: inherit;
+      background: none;
+      border: none;
+      cursor: pointer
+    }
+
+    button:focus-visible,
+    a:focus-visible,
+    summary:focus-visible {
+      outline: 2px solid var(--act);
+      outline-offset: 2px;
+      border-radius: 4px
+    }
+
+    .shell {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 0 16px 64px
+    }
+
+    /* ---------- header ---------- */
+    header {
+      position: sticky;
+      top: 0;
+      background: var(--wash);
+      z-index: 5;
+      padding: 14px 0 10px;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .hrow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px
+    }
+
+    .brand {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--ink-soft)
+    }
+
+    .brand b {
+      color: var(--ink);
+      font-weight: 600
+    }
+
+    .hbtns {
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .hbtn {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .06em;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--card);
+      color: var(--act)
+    }
+
+    .hbtn:hover {
+      border-color: var(--act)
+    }
+
+    .dots {
+      display: flex;
+      gap: 7px;
+      margin-top: 10px
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1.5px solid var(--line);
+      transition: background .25s, border-color .25s
+    }
+
+    .dot.on {
+      background: var(--go);
+      border-color: var(--go)
+    }
+
+    .dot.cur {
+      border-color: var(--amber);
+      box-shadow: 0 0 0 3px rgba(199, 122, 31, .18)
+    }
+
+    .progress-note {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-soft);
+      margin-top: 6px
+    }
+
+    /* ---------- chooser ---------- */
+    .choose {
+      padding: 56px 0 20px;
+      text-align: center
+    }
+
+    .choose .eyebrow {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--ink-soft)
+    }
+
+    .choose h1 {
+      font-family: var(--serif);
+      font-size: clamp(34px, 7vw, 46px);
+      line-height: 1.08;
+      margin: 10px 0 6px
+    }
+
+    .choose .proj {
+      font-size: 17px;
+      color: var(--ink-soft);
+      margin-bottom: 14px
+    }
+
+    .tut {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--ink);
+      background: var(--card);
+      border: 1px solid var(--line);
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      margin-bottom: 28px
+    }
+
+    .modes {
+      display: grid;
+      gap: 12px;
+      text-align: left
+    }
+
+    @media(min-width:560px) {
+      .modes {
+        grid-template-columns: 1fr 1fr
+      }
+    }
+
+    .mode {
+      background: var(--card);
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: 18px 16px;
+      transition: border-color .15s, transform .15s;
+      width: 100%;
+      text-align: left
+    }
+
+    .mode:hover {
+      border-color: var(--act);
+      transform: translateY(-1px)
+    }
+
+    .mode .mt {
+      font-family: var(--serif);
+      font-size: 21px;
+      margin-bottom: 4px
+    }
+
+    .mode .ms {
+      font-size: 14px;
+      color: var(--ink-soft)
+    }
+
+    details.demo {
+      margin-top: 26px;
+      text-align: left;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 10px
+    }
+
+    details.demo summary {
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--act);
+      padding: 12px 16px;
+      list-style: none
+    }
+
+    details.demo summary::-webkit-details-marker {
+      display: none
+    }
+
+    details.demo[open] summary {
+      border-bottom: 1px solid var(--line)
+    }
+
+    details.demo .demo-body {
+      padding: 14px 16px;
+      font-size: 14.5px;
+      color: var(--ink-soft)
+    }
+
+    details.demo .demo-body p {
+      margin-bottom: 8px
+    }
+
+    /* Replace the text block inside .demo-body with a short demo GIF when it is ready */
+    .foot {
+      margin-top: 34px;
+      font-size: 13px;
+      color: var(--ink-soft)
+    }
+
+    /* ---------- step card ---------- */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 26px 22px 20px;
+      margin-top: 22px;
+      box-shadow: 0 1px 2px rgba(28, 43, 51, .05);
+      animation: cardin .18s ease-out
+    }
+
+    @keyframes cardin {
+      from {
+        opacity: 0;
+        transform: translateY(6px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    @media(prefers-reduced-motion:reduce) {
+      * {
+        animation: none !important;
+        transition: none !important
+      }
+    }
+
+    .step-eyebrow {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      display: flex;
+      justify-content: space-between;
+      align-items: center
+    }
+
+    .step-eyebrow .done-flag {
+      color: var(--go);
+      font-weight: 600
+    }
+
+    .card h2 {
+      font-family: var(--serif);
+      font-size: clamp(24px, 5vw, 30px);
+      line-height: 1.15;
+      margin: 8px 0 8px
+    }
+
+    .intro {
+      color: var(--ink-soft);
+      font-size: 15.5px;
+      margin-bottom: 16px
+    }
+
+    .prereq {
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--act);
+      background: #F7FAFC;
+      border-radius: 8px;
+      padding: 11px 14px 12px;
+      margin: 0 0 16px
+    }
+
+    .prereq h4 {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--act);
+      margin-bottom: 6px
+    }
+
+    .prereq ul {
+      list-style: none
+    }
+
+    .prereq li {
+      font-size: 14px;
+      padding: 3px 0;
+      display: flex;
+      gap: 9px;
+      align-items: flex-start
+    }
+
+    .prereq li::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--act);
+      margin-top: 8px;
+      flex: 0 0 auto
+    }
+
+    .ctrl {
+      margin: 0 0 16px
+    }
+
+    .ctrl-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 7px
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px
+    }
+
+    .pill {
+      font-size: 14px;
+      padding: 7px 14px;
+      border: 1.5px solid var(--line);
+      border-radius: 999px;
+      background: var(--card)
+    }
+
+    .pill.on {
+      border-color: var(--act);
+      background: var(--act-soft);
+      color: var(--act);
+      font-weight: 600
+    }
+
+    .seg {
+      display: inline-flex;
+      border: 1.5px solid var(--line);
+      border-radius: 9px;
+      overflow: hidden
+    }
+
+    .seg button {
+      font-size: 13.5px;
+      padding: 7px 13px;
+      border-right: 1.5px solid var(--line)
+    }
+
+    .seg button:last-child {
+      border-right: none
+    }
+
+    .seg button.on {
+      background: var(--act);
+      color: #fff;
+      font-weight: 600
+    }
+
+    ul.actions {
+      list-style: none;
+      margin: 4px 0 6px
+    }
+
+    .act-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 11px 4px;
+      border-bottom: 1px dashed var(--line)
+    }
+
+    .act-row:last-child {
+      border-bottom: none
+    }
+
+    label.act-row {
+      cursor: pointer
+    }
+
+    .anum {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--ink-soft);
+      min-width: 20px;
+      text-align: right;
+      margin-top: 3px;
+      flex: 0 0 auto
+    }
+
+    .box {
+      flex: 0 0 auto;
+      width: 21px;
+      height: 21px;
+      margin-top: 2px;
+      border: 2px solid var(--act);
+      border-radius: 5px;
+      display: grid;
+      place-items: center;
+      background: var(--card);
+      transition: background .12s, transform .12s
+    }
+
+    .act-row input {
+      position: absolute;
+      opacity: 0;
+      width: 1px;
+      height: 1px
+    }
+
+    .act-row input:checked+.box {
+      background: var(--go);
+      border-color: var(--go);
+      transform: scale(1.05)
+    }
+
+    .act-row input:checked+.box::after {
+      content: '';
+      width: 6px;
+      height: 11px;
+      border: solid #fff;
+      border-width: 0 2.5px 2.5px 0;
+      transform: rotate(43deg);
+      margin-top: -2px
+    }
+
+    .act-row input:focus-visible+.box {
+      outline: 2px solid var(--act);
+      outline-offset: 2px
+    }
+
+    .act-row input:checked~.atext {
+      color: var(--ink-soft)
+    }
+
+    .atext {
+      font-size: 15.5px
+    }
+
+    /* Code blocks inside an action: a small terminal slab on the
+       card. Follow-along steps put typeable code here. */
+    .acode {
+      display: block;
+      margin: 10px 0 4px;
+      padding: 12px 14px;
+      background: var(--ink);
+      color: #E8EEF2;
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.55;
+      white-space: pre;
+      overflow-x: auto;
+      text-decoration: none;
+      cursor: text;
+    }
+
+    .act-row input:checked~.atext .acode {
+      opacity: .75
+    }
+
+    .extras {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 16px 0 6px
+    }
+
+    .xbtn {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .04em;
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      color: var(--act);
+      background: var(--card)
+    }
+
+    .xbtn:hover {
+      border-color: var(--act)
+    }
+
+    .xbtn.open {
+      background: var(--act);
+      color: #fff;
+      border-color: var(--act)
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px;
+      margin: 6px 0 10px;
+      background: #FBFCFD
+    }
+
+    .panel h4 {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+      margin-bottom: 10px
+    }
+
+    .tbl+.tbl {
+      margin-top: 16px
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 13.5px
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 7px 8px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top
+    }
+
+    th {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--ink-soft)
+    }
+
+    td.mono {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      white-space: nowrap
+    }
+
+    .tablewrap {
+      overflow-x: auto
+    }
+
+    .issue {
+      padding: 11px 0;
+      border-bottom: 1px dashed var(--line)
+    }
+
+    .issue:last-child {
+      border-bottom: none
+    }
+
+    .issue .tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 5px
+    }
+
+    .tag {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: .06em;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--ink-soft)
+    }
+
+    .tag.global {
+      border-color: var(--go);
+      color: var(--go);
+      background: var(--go-soft);
+      font-weight: 600
+    }
+
+    .issue .prob {
+      font-weight: 600;
+      font-size: 14.5px;
+      margin-bottom: 3px
+    }
+
+    .issue .fix {
+      font-size: 14.5px;
+      color: var(--ink-soft)
+    }
+
+    .checkpoint {
+      margin: 18px 0 4px;
+      background: var(--go-soft);
+      border: 1.5px solid var(--go);
+      border-radius: 10px;
+      padding: 13px 15px;
+      position: relative;
+      clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%)
+    }
+
+    .checkpoint .cp-eyebrow {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--go);
+      font-weight: 700;
+      margin-bottom: 4px
+    }
+
+    .checkpoint .cp-text {
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--ink)
+    }
+
+    .checkpoint.met {
+      background: var(--go);
+      border-color: var(--go)
+    }
+
+    .checkpoint.met .cp-eyebrow,
+    .checkpoint.met .cp-text {
+      color: #fff
+    }
+
+    /* Back on the left, Reset in the middle, Next on the right */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line)
+    }
+
+    .ghost {
+      font-size: 14px;
+      color: var(--act)
+    }
+
+    .ghost:hover {
+      text-decoration: underline
+    }
+
+    .ghost:disabled {
+      color: var(--line);
+      cursor: default;
+      text-decoration: none
+    }
+
+    .resetbtn {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink-soft);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 7px 14px;
+      background: var(--card)
+    }
+
+    .resetbtn:hover {
+      border-color: var(--amber);
+      color: var(--amber)
+    }
+
+    .next {
+      background: var(--act);
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      padding: 11px 24px;
+      border-radius: 9px;
+      transition: background .15s, transform .1s
+    }
+
+    .next:hover:not(:disabled) {
+      transform: translateY(-1px)
+    }
+
+    .next:disabled {
+      background: var(--line);
+      color: #8FA0AB;
+      cursor: not-allowed
+    }
+
+    .next.finish {
+      background: var(--go)
+    }
+
+    .gate-note {
+      font-size: 12.5px;
+      color: var(--ink-soft);
+      text-align: right;
+      margin-top: 7px
+    }
+
+    /* ---------- big picture ---------- */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(28, 43, 51, .45);
+      display: none;
+      z-index: 20;
+      overflow-y: auto;
+      padding: 24px 16px
+    }
+
+    .overlay.show {
+      display: block
+    }
+
+    .sheet {
+      max-width: 560px;
+      margin: 0 auto;
+      background: var(--card);
+      border-radius: 14px;
+      padding: 24px 20px
+    }
+
+    .sheet h3 {
+      font-family: var(--serif);
+      font-size: 26px;
+      margin-bottom: 2px
+    }
+
+    .sheet .sub {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink-soft);
+      margin-bottom: 16px
+    }
+
+    .bp-row {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      width: 100%;
+      text-align: left;
+      padding: 12px 6px;
+      border-bottom: 1px dashed var(--line)
+    }
+
+    .bp-row:hover:not(:disabled) {
+      background: var(--act-soft)
+    }
+
+    .bp-row:disabled {
+      opacity: .42;
+      cursor: not-allowed
+    }
+
+    .led {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      border: 2px solid var(--line);
+      background: var(--card)
+    }
+
+    .led.on {
+      background: var(--go);
+      border-color: var(--go)
+    }
+
+    .led.cur {
+      border-color: var(--amber);
+      background: #FDF3E4
+    }
+
+    .bp-num {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--ink-soft);
+      min-width: 16px
+    }
+
+    .bp-title {
+      font-size: 15px;
+      flex: 1
+    }
+
+    .bp-state {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--ink-soft)
+    }
+
+    .bp-state.done {
+      color: var(--go);
+      font-weight: 700
+    }
+
+    .sheet .close {
+      margin-top: 16px;
+      width: 100%;
+      border: 1.5px solid var(--line);
+      border-radius: 9px;
+      padding: 11px;
+      font-weight: 600;
+      color: var(--act)
+    }
+
+    /* ---------- congrats ---------- */
+    .congrats {
+      text-align: center;
+      padding: 60px 0 30px
+    }
+
+    .congrats .eyebrow {
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--go);
+      font-weight: 700
+    }
+
+    .congrats h1 {
+      font-family: var(--serif);
+      font-size: clamp(30px, 6.5vw, 42px);
+      line-height: 1.22;
+      margin: 18px 0 10px
+    }
+
+    .congrats h1 span {
+      display: block
+    }
+
+    .congrats .count {
+      color: var(--go)
+    }
+
+    .congrats .after {
+      color: var(--ink-soft);
+      font-size: 16px;
+      margin: 14px 0 30px
+    }
+
+    .congrats .row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap
+    }
+
+    /* ---------- modal ---------- */
+    .modal-wrap {
+      position: fixed;
+      inset: 0;
+      background: rgba(28, 43, 51, .45);
+      display: none;
+      z-index: 30;
+      align-items: center;
+      justify-content: center;
+      padding: 20px
+    }
+
+    .modal-wrap.show {
+      display: flex
+    }
+
+    .modal {
+      background: var(--card);
+      border-radius: 14px;
+      max-width: 420px;
+      width: 100%;
+      padding: 24px 22px
+    }
+
+    .modal h3 {
+      font-family: var(--serif);
+      font-size: 22px;
+      margin-bottom: 8px
+    }
+
+    .modal p {
+      color: var(--ink-soft);
+      font-size: 15px;
+      margin-bottom: 20px
+    }
+
+    .modal .row {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end
+    }
+
+    .btn-quiet {
+      border: 1.5px solid var(--line);
+      border-radius: 9px;
+      padding: 10px 16px;
+      font-weight: 600;
+      color: var(--ink-soft)
+    }
+
+    .btn-warn {
+      background: var(--act);
+      color: #fff;
+      border-radius: 9px;
+      padding: 10px 18px;
+      font-weight: 600
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==========================================================
+       FIXED SKELETON: the four shells the script fills.
+       1. #hdr    the sticky header bar (hidden until a mode is chosen)
+       2. #main   every screen (chooser, step card, congrats) renders here
+       3. #bp     the Big Picture overlay
+       4. #mwrap  the reusable confirm modal
+       Nothing else is ever added to the body; if content is on
+       screen, one of the render functions in the script put it
+       inside one of these four.
+       ========================================================== -->
+  <header id="hdr" hidden>
+    <div class="shell" style="padding-bottom:0">
+      <div class="hrow">
+        <div class="brand"><b>One Step at a Time</b> &middot; <span id="hproj"></span></div>
+        <div class="hbtns">
+          <button class="hbtn" id="modeSwitch"></button>
+          <button class="hbtn" id="bpBtn">The Big Picture</button>
+        </div>
+      </div>
+      <div class="dots" id="dots" aria-hidden="true"></div>
+      <div class="progress-note" id="pnote"></div>
+    </div>
+  </header>
+
+  <!-- The stage: renderChooser, renderStep, and renderEnd each empty
+       this element and rebuild it. See the CODE MAP in the script. -->
+  <main class="shell" id="main"></main>
+
+  <!-- The Big Picture overlay: openBP() fills #bpList with one row
+       per step and adds the 'show' class to display it. -->
+  <div class="overlay" id="bp" role="dialog" aria-label="The Big Picture">
+    <div class="sheet">
+      <h3>The Big Picture</h3>
+      <div class="sub" id="bpSub"></div>
+      <div id="bpList"></div>
+      <button class="close" id="bpClose">Back to the step</button>
+    </div>
+  </div>
+
+  <!-- The confirm modal: ask() in the script fills the title, body,
+       and both buttons, then shows it. Only Reset uses it today. -->
+  <div class="modal-wrap" id="mwrap" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3 id="mTitle"></h3>
+      <p id="mBody"></p>
+      <div class="row">
+        <button class="btn-quiet" id="mNo"></button>
+        <button class="btn-warn" id="mYes"></button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================================
+       CODE MAP: how this file is organized and how it runs.
+
+       The file has three floors:
+         1. The style block: all looks. Nothing in it changes
+            behavior; it only decides how things appear.
+         2. The body skeleton: four fixed shells that start empty
+            or hidden (header bar, main area, Big Picture overlay,
+            confirm modal). The script fills them.
+         3. This script, top to bottom:
+              a. PROJECT   the data. The only part edited per app.
+              b. store     saves progress (localStorage + fallback)
+              c. state     everything the app remembers
+              d. helpers   small read-only functions that answer
+                           questions about the data and state
+              e. renderers functions that draw each screen
+              f. wire-up   the last lines: connect the header
+                           buttons and start the app
+
+       What happens first: the browser reads this script top to
+       bottom and only DEFINES things. Nothing is drawn until the
+       final two lines run: loadState() restores saved progress,
+       then render() draws the first screen.
+
+       The one loop that runs everything after that:
+
+         a click changes state  ->  saveState()  ->  render()
+
+       render() throws away whatever is inside the main area and
+       redraws it from state, so the screen is always a pure
+       picture of state. To change what appears, change the data
+       or a render function; hand-editing the page from the
+       browser console will vanish on the next redraw, and that
+       is by design.
+       ============================================================ */
+
+    /* ============================================================
+       PROJECT DATA
+       This block is the single source of truth. The companion
+       script tools/generate_docs.py reads everything between the
+       START and END markers below and generates the repo's
+       Markdown troubleshooting and lessons file from it.
+       Edit copy here; never in two places.
+
+       Header fields, in order:
+       - "id" keys saved progress in the browser, so two apps
+         never overwrite each other's ticks. Lowercase, hyphens.
+       - "title" and "tagline" fill the chooser and header bar.
+       - "hardwareLabels" are the two fork toggle button labels.
+       - "forkTags" are the short words issues use as tags for the
+         two fork sides. They must match issue tags exactly.
+       - "hardwareQuestion" is the short prompt above the toggle.
+       - "congratsAfter" is the line under the motto on the
+         all-green finish screen: point it at what comes next.
+
+       Shapes worth knowing:
+       - An action is a string, or an object with "text" plus
+         "older" / "newer" overrides picked by the hardware toggle.
+       - An action object may also carry "code": a string shown as
+         a typeable code block under the text. Fork the block by
+         making "code" an object with "older" / "newer" strings.
+       - "cheat" is one table or an array of tables. A table row is
+         an array of cells, or an object keyed "older" / "newer"
+         whose matching variant shows for the selected hardware.
+       - "prereqs" renders as the What You Need box under the intro.
+
+       One HTML quirk worth knowing: never leave a literal closing
+       script tag inside data text. The browser would end the app's
+       script right there, even inside a quoted string. Write the
+       slash escaped instead, as in <\/script>, which reads back
+       as the plain tag when the data is parsed.
+       ============================================================ */
+    const PROJECT = /*__STEPS_DATA_START__*/{
+      "id": "proxmox-old-pc",
+      "title": "Install Proxmox on an Old PC",
+      "tagline": "Turn a forgotten desktop into a home virtualization server, one step at a time.",
+      "hardwareLabels": {
+        "older": "Older PC (BIOS/MBR)",
+        "newer": "Newer PC (UEFI/GPT)"
+      },
+      "forkTags": {
+        "older": "Older PC",
+        "newer": "Newer PC"
+      },
+      "hardwareQuestion": "This machine is",
+      "congratsAfter": "Your server is running. The next project writes itself: your first VM.",
+      "steps": [
+        {
+          "id": "recon",
+          "title": "Recon: know what you have",
+          "intro": "Ten minutes of looking saves an evening of guessing. This step is pure information gathering, nothing gets changed yet, and the cheat sheet carries the deeper why for every item below.",
+          "prereqs": [
+            "A device, like an old PC, that will become the Proxmox server",
+            "A USB drive, or external drive, that will be flashed and used to install Proxmox",
+            "A device, like a laptop or the same PC, to download the installer and flash the drive. One PC and one drive is enough to install (that is how new PCs with installation media work), but Proxmox runs headless after install, so plan on a second device with a browser for First Login."
+          ],
+          "actions": [
+            "Note the make and model of the PC that will become your Proxmox server. Check the stickers / service tag on the case.",
+            "Confirm your PC has sufficient RAM (8 GB or more is comfortable) and note the CPU model. On Windows press: Win + R, type dxdiag, press Enter.",
+            "Confirm the CPU supports virtualization. Enter BIOS setup and look for it directly. It hides under names like VT-x, VT-d, AMD-V, or SVM Mode. If you find it, enable it now and save yourself a return trip.",
+            {
+              "text": "Confirm this machine really is UEFI: press Win + R, type msinfo32, press Enter, and read the 'BIOS Mode' line. UEFI should appear for modern devices, and GPT will be your partition answer later. Says Legacy instead? Tap the Older PC button above.",
+              "older": "Confirm this machine really is BIOS: press Win + R, type msinfo32, press Enter, and read the 'BIOS Mode' line. Legacy should appear for older PCs, and MBR will be your partition answer later. Says UEFI instead? Tap the Newer PC button above."
+            },
+            {
+              "text": "Pick a USB or external drive you do not mind wiping completely and note its size.",
+              "older": "Pick a USB or external drive you do not mind wiping completely and note its size. Aim for a USB that is 16 GB or smaller."
+            }
+          ],
+          "cheat": [
+            {
+              "title": "Recon cheat sheet: the deeper why",
+              "cols": [
+                "Item",
+                "What to know",
+                "Real world"
+              ],
+              "rows": [
+                [
+                  "Identify the model",
+                  "The exact model unlocks the manual, the spec page, and the right setup keys. Look for a sticker or service tag on the case.",
+                  "Documenting the model or service tag is the first move on almost every support call, because it turns guessing into looking things up."
+                ],
+                [
+                  "Check specs fast on Windows",
+                  "Press Win + R, type dxdiag, press Enter. The System tab shows the model, CPU, and RAM on one screen.",
+                  "dxdiag works on any Windows box, which is why it's helpful to reach for it before anything else."
+                ],
+                [
+                  "CPU virtualization (Intel VT-x / AMD-V)",
+                  "A hardware feature that lets one CPU safely act as several, which is exactly what a hypervisor like Proxmox needs to run virtual machines.",
+                  "Every VM host depends on it, from an old desktop to enterprise clusters. Factories sometimes ship it disabled, but you can enable it in BIOS setup."
+                ],
+                [
+                  "RAM and CPU cores",
+                  "Each running VM reserves its own memory and cores, so the amount of RAM and the CPU model decide how many VMs you can run at once. 8 GB RAM and a CPU with 4+ cores comfortably runs Proxmox plus a couple of light VMs. More RAM and cores mean more and bigger VMs.",
+                  "Memory is usually the first wall a VM host hits, which is why a RAM upgrade is the simplest thing to do to improve performance."
+                ],
+                {
+                  "older": [
+                    "Confirm BIOS",
+                    "In Windows, msinfo32 shows BIOS Mode: Legacy. At power-on, enter setup (F2 on Dells, Del on many desktops); a keyboard-only blue or gray screen is classic BIOS.",
+                    "Firmware mode decides your partition scheme (BIOS pairs with MBR), and a mismatch is a top cause of 'my USB will not boot'."
+                  ],
+                  "newer": [
+                    "Confirm UEFI",
+                    "In Windows: msinfo32 shows BIOS Mode: UEFI. At power-on: enter setup; a graphical screen with mouse support is UEFI.",
+                    "Firmware mode decides your partition scheme (UEFI pairs with GPT), and a mismatch is a top cause of 'my USB will not boot'."
+                  ]
+                },
+                [
+                  "The USB drive",
+                  "8 to 16 GB is the sweet spot. Older USB 2.0 drives are slow but the safest bet on old machines. Everything on the drive gets erased during flashing.",
+                  "Enterprises rarely flash by hand: the OS arrives over the network (PXE) or through a management dashboard before a device ever reaches a user. USB installs are the home lab and small shop path, so knowing both worlds is the point."
+                ]
+              ]
+            }
+          ],
+          "issues": [
+            {
+              "tags": [
+                "Older PC"
+              ],
+              "problem": "My 64 GB USB drive flashed perfectly and still would not boot the old Dell: black screen even though the flash reported success",
+              "fix": "The fix was not software at all. I switched to a much smaller, older drive and it booted on the first try. If your machine is old, start with a smaller drive."
+            },
+            {
+              "tags": [
+                "All setups"
+              ],
+              "problem": "The PC acts strange or refuses to start after a RAM or component upgrade",
+              "fix": "Reseat everything you touched. RAM that is not fully clicked into its slot, or a cable nudged loose during the upgrade, causes black screens and random failures that look exactly like software problems. Push until it clicks, and check both ends of every cable."
+            }
+          ],
+          "done": "You can answer three questions: Does my CPU support virtualization? Is my PC BIOS or UEFI? Which drive am I willing to erase?"
+        },
+        {
+          "id": "flash",
+          "title": "Make the bootable drive",
+          "intro": "One journey: from an empty USB drive to one that can start the Proxmox installer. Pick your tool below. I used both, and the buttons tell you what actually happened.",
+          "hardware": true,
+          "methodsLabel": "Pick your tool",
+          "methods": {
+            "Rufus": {
+              "actions": [
+                "Download the Proxmox VE ISO from proxmox.com: open Downloads and look for the newest 'Proxmox VE ISO Installer'. (The file ends in .iso and is roughly 1.5 GB)",
+                "Download Rufus from rufus.ie. Look for the latest Standard or Portable .exe; Portable runs with no install at all.",
+                "Verify the downloads: locate the file you downloaded, right click it, and select Copy as Path. Use the cheat sheet below to find the correct command for your system, then compare the output against the SHA256 checksum listed on the download page. Matching values mean a clean, untampered file.",
+                "Plug in your USB drive and open Rufus. Confirm the Device box shows your USB, matching the size you noted in Recon.",
+                "Under Boot selection, click SELECT and choose the Proxmox .iso from your Downloads folder.",
+                {
+                  "text": "Set Partition scheme to GPT and Target system to UEFI (non CSM), the pairing modern machines expect.",
+                  "older": "Set Partition scheme to MBR and Target system to BIOS (or UEFI-CSM), the pairing old machines expect."
+                },
+                "Leave File system and the remaining options at their defaults.",
+                "Click START. When Rufus asks how to write the image, choose 'Write in DD Image mode'. Proxmox officially recommends DD.",
+                "Wait for the green READY bar, then eject the drive."
+              ]
+            },
+            "Ventoy": {
+              "actions": [
+                "Download the Proxmox VE ISO from proxmox.com: open Downloads and look for the newest 'Proxmox VE ISO Installer'. The file ends in .iso and is roughly 1.5 GB.",
+                "Download Ventoy from ventoy.net: look for the ventoy-windows .zip release, extract it, and run Ventoy2Disk.exe.",
+                "Verify the downloads: locate the file you downloaded, right click it, and select Copy as Path. Use the cheat sheet below to find the correct command for your system, then compare the output against the SHA256 checksum listed on the download page. Matching values mean a clean, untampered file.",
+                {
+                  "text": "In Options, set the partition style to GPT.",
+                  "older": "In Options, set the partition style to MBR."
+                },
+                "Select your USB drive and click Install. This erases the drive and turns it into a Ventoy drive.",
+                "Copy the Proxmox .iso file onto the new Ventoy partition. No burning step: Ventoy boots ISO files directly.",
+                "Eject the drive."
+              ]
+            }
+          },
+          "cheat": [
+            {
+              "title": "Flash options, decoded",
+              "cols": [
+                "Option",
+                "What it actually is",
+                "What to do here"
+              ],
+              "rows": [
+                [
+                  "Device",
+                  "The USB drive that gets erased and rebuilt as the boot drive, which will plug into the old PC.",
+                  "Triple-check it matches your drive's size. Rufus will happily erase and write to any drive it can see."
+                ],
+                [
+                  "Boot selection",
+                  "The ISO you downloaded: the entire Proxmox installer packed into a single file.",
+                  "Point it at the .iso in your Downloads folder."
+                ],
+                [
+                  "MBR (Master Boot Record)",
+                  "The classic partition map from the BIOS era: a small table at the very start of the drive that tells old firmware where to boot from.",
+                  "Pick MBR for old BIOS machines, roughly pre-2012."
+                ],
+                [
+                  "GPT (GUID Partition Table)",
+                  "The modern replacement: a larger, smarter map that keeps backup copies of itself, and the format UEFI firmware expects.",
+                  "Pick GPT for modern UEFI machines."
+                ],
+                [
+                  "Target system",
+                  "A label that tells the drive which firmware to introduce itself to: BIOS, UEFI, or both.",
+                  "Rufus sets it automatically to match your MBR or GPT choice."
+                ],
+                [
+                  "File system",
+                  "How the drive's data area is organized (FAT32, NTFS, and so on).",
+                  "Leave the default. A DD write replaces the whole layout anyway."
+                ],
+                [
+                  "ISO mode",
+                  "Writes the installer as ordinary files copied onto the drive. Flexible and readable afterward, but some installers cannot boot this way.",
+                  "Not this time."
+                ],
+                [
+                  "DD mode",
+                  "Clones the ISO onto the drive byte for byte: an exact image of the disk the Proxmox team built.",
+                  "This is the one. Proxmox is designed to boot from a DD image."
+                ]
+              ]
+            },
+            {
+              "title": "Verifying a download (SHA256)",
+              "cols": [
+                "Platform",
+                "Command"
+              ],
+              "monoLastCol": true,
+              "rows": [
+                [
+                  "Windows PowerShell",
+                  "Get-FileHash -Path \"filePath\" -Algorithm SHA256"
+                ],
+                [
+                  "Windows CMD",
+                  "certutil -hashfile \"filePath\" sha256"
+                ],
+                [
+                  "Linux",
+                  "sha256sum ~/fileLocation/fileName.fileType"
+                ],
+                [
+                  "macOS",
+                  "shasum -a 256 ~/fileLocation/fileName.fileType"
+                ],
+                [
+                  "Cross-platform (OpenSSL)",
+                  "openssl sha256 ~/fileLocation/fileName.fileType"
+                ]
+              ]
+            }
+          ],
+          "issues": [
+            {
+              "tags": [
+                "All setups"
+              ],
+              "problem": "The finished drive boots into a Proxmox error or a grub prompt",
+              "fix": "This happens when the image was written in ISO mode instead of DD. Re-run the flash and pick 'Write in DD Image mode' at the prompt. If it happens twice, re-download the ISO and verify the checksum in case the file is corrupted."
+            },
+            {
+              "tags": [
+                "Ventoy",
+                "Older PC"
+              ],
+              "problem": "The Ventoy drive is invisible to the boot menu or hangs on an old PC",
+              "fix": "This is where Ventoy lost me. My older Dell never got along with it. If your PC is old, do not fight this battle, switch to Rufus in MBR mode. That is the exact road I ended up taking."
+            },
+            {
+              "tags": [
+                "Rufus"
+              ],
+              "problem": "Rufus does not list my USB drive",
+              "fix": "Try a different port first. If it is an unusual drive, open 'Show advanced drive properties' and enable 'List USB Hard Drives', but make sure you unplug any external hard drives you do not want accidentally wiped before you do. Once they appear in that list, one wrong click at START erases a real drive."
+            }
+          ],
+          "done": "Your tool reports success and your USB drive is ejected."
+        },
+        {
+          "id": "firmware",
+          "title": "Prep the firmware",
+          "intro": "Three settings stand between you and a clean boot, and all of them live in the setup screen you never visit. The cheat sheet covers how to get in and where each one hides.",
+          "actions": [
+            "Enter BIOS: Power-on your PC and tap the setup key repeatedly. On Dells F2 opens BIOS, and F12 opens the one-time boot menu.",
+            "Inside BIOS: Find the virtualization setting and turn it on. Look under menus named CPU, Advanced, or Security for variations of Intel Virtualization Technology, VT-x, VT-d, AMD-V, or SVM Mode.",
+            {
+              "text": "Inside BIOS: Find Secure Boot and set it to Disabled (Boot or Security tab; some boards only unlock it after you set an admin password or switch the mode to Custom). Quick warning: Secure Boot protects against boot-level malware, and disabling it can make a BitLocker-encrypted Windows drive ask for its recovery key at the next startup. Get the key first: go to aka.ms/myrecoverykey, sign in with your Microsoft account, and write down the key listed for this PC (a photo works).",
+              "older": "Older BIOS machines have no Secure Boot. Nothing to do here: tick this and move on."
+            },
+            "Inside BIOS: To boot from the USB, change the Boot Order (also called Boot Sequence or Boot Priority) and move USB to the top of the list, above the internal disk.",
+            "Save and exit BIOS: press F10 on most machines, choose Yes to confirm, and the PC restarts with your changes."
+          ],
+          "cheat": [
+            {
+              "title": "Firmware cheat sheet: why and how",
+              "cols": [
+                "Setting",
+                "How to do it",
+                "Why it matters"
+              ],
+              "rows": [
+                [
+                  "Enter BIOS setup from power-on",
+                  "Immediately after powering on, tap the setup key repeatedly: F2 (Dell), Del (many desktops), F1, F10, or Esc. Missed it? Restart and tap earlier.",
+                  "Firmware settings live underneath the operating system, so they can only be reached at power-on, before anything else loads."
+                ],
+                {
+                  "newer": [
+                    "Enter BIOS setup from Windows 10/11",
+                    "Hold Shift and click Restart in the Start menu. On the blue screen pick Troubleshoot, then Advanced options, then UEFI Firmware Settings, then Restart.",
+                    "No key-tap timing needed. The tile only exists on UEFI machines: legacy BIOS PCs show the same blue recovery menu, but without a firmware entry, so they must use the power-on key."
+                  ]
+                },
+                [
+                  "Enabling virtualization",
+                  "Under CPU, Advanced, or Security. Look for Intel Virtualization Technology, VT-x, VT-d, AMD-V, or SVM Mode. Set it to Enabled.",
+                  "Proxmox is a hypervisor, and hypervisors lean on this CPU feature to run VMs at full speed. Left off, VMs crawl or refuse to start."
+                ],
+                {
+                  "newer": [
+                    "Secure Boot",
+                    "Boot or Security tab, set it to Disabled. On some boards it only unlocks after you set an admin password or switch the mode to Custom.",
+                    "A UEFI feature that only boots software signed by trusted vendors. Great on a work laptop, but it can block installers. Corporate machines usually turn it back on after imaging."
+                  ]
+                },
+                [
+                  "Boot order",
+                  "Boot Order, Boot Sequence, or Boot Priority menu. Use the on-screen keys (often + and -, or F5 and F6) to move USB to the top.",
+                  "The PC reads this list top to bottom at every power-on. USB above the internal disk means your installer wins the race."
+                ],
+                [
+                  "The one-time boot menu",
+                  "Note your brand's boot-menu key (Dell uses F12), restart, and tap it repeatedly until the menu opens. Pick the USB entry from the list.",
+                  "A shortcut that boots one chosen device once, without changing the saved boot order in BIOS setup."
+                ]
+              ]
+            }
+          ],
+          "issues": [
+            {
+              "tags": [
+                "All setups"
+              ],
+              "problem": "I cannot find the virtualization setting anywhere",
+              "fix": "Look under CPU, Advanced, or Security tabs. Some boards only reveal it after a firmware update. Search your exact PC model plus 'enable virtualization' to get the precise menu path."
+            },
+            {
+              "tags": [
+                "Newer PC"
+              ],
+              "problem": "Secure Boot turned itself back on",
+              "fix": "Some boards re-enable it when a firmware security check fails or after an update. Two fixes that work: update the BIOS firmware from the manufacturer's support page, or clear the CMOS (power off and unplug, then remove the coin battery for a minute or use the board's CMOS jumper). Recheck the setting afterward, and expect the date and time to need resetting after a CMOS clear."
+            }
+          ],
+          "done": "Virtualization is on, Secure Boot is out of the way, and the PC will look at USB first."
+        },
+        {
+          "id": "firstboot",
+          "title": "First boot: the black screen gauntlet",
+          "intro": "The step where old hardware fights back. The actions are the walkthrough; the cheat sheet explains why each move works, and the fixes below include the exact ones that saved this project.",
+          "actions": [
+            {
+              "text": "Plug the Proxmox USB into the PC.",
+              "older": "Plug the Proxmox USB into a rear USB 2.0 port, not a front port and not a blue USB 3.0 one."
+            },
+            "Power on and open the boot menu (F12 on Dells), or let your new boot order do the work.",
+            {
+              "text": "Pick your USB drive from the list. UEFI machines may list it twice: try the entry that starts with UEFI first.",
+              "older": "Pick your USB drive from the list."
+            },
+            "At the Proxmox menu, choose 'Install Proxmox VE (Graphical)'.",
+            "Land on the installer's license screen. Take a breath. The hard part is over."
+          ],
+          "cheat": [
+            {
+              "title": "First boot, explained",
+              "cols": [
+                "Item",
+                "What it is",
+                "Why it helps"
+              ],
+              "rows": [
+                [
+                  "Rear USB ports",
+                  "The ports soldered directly to the motherboard, which makes them the most reliable ones for USB boot.",
+                  "Old firmware predates USB 3.0 and may not see the drive. Rear 2.0 ports are compatible, sometimes only 1 specific port in the back works for booting USB."
+                ],
+                [
+                  "Boot menu vs boot order",
+                  "The boot menu (F12 on Dells) picks a device for this one boot only; boot order is the saved list used every time.",
+                  "Either path works. The menu is faster and leaves no settings changed behind you."
+                ],
+                {
+                  "newer": [
+                    "The drive listed twice",
+                    "UEFI machines often show 'UEFI: YourDrive' and a plain 'YourDrive' entry. Same drive, two boot styles.",
+                    "The UEFI entry matches the GPT drive you built, so that is the one to pick."
+                  ]
+                },
+                [
+                  "Graphical vs Terminal UI installer",
+                  "Two faces of the same installer. One graphical, the other plain text.",
+                  "Some video hardware freezes on the graphical mode, Terminal UI installs the identical system."
+                ]
+              ]
+            }
+          ],
+          "issues": [
+            {
+              "tags": [
+                "Older PC"
+              ],
+              "problem": "Black screen right after choosing Install",
+              "fix": "The fix that saved me: move the USB drive to a rear USB 2.0 port and try again. Old machines and USB 3.0 boot handoffs do not mix, and the port swap ended it in one try."
+            },
+            {
+              "tags": [
+                "All setups"
+              ],
+              "problem": "The graphical installer never appears, or the screen comes up garbled",
+              "fix": "Reboot and pick the Terminal UI install option from the Proxmox menu instead. It is the same installer with a plainer face, and far pickier hardware still accepts it."
+            },
+            {
+              "tags": [
+                "All setups"
+              ],
+              "problem": "The USB drive does not load the boot menu at all",
+              "fix": "Move the USB drive to a rear port (if it is back there already, try a different rear port), then recheck boot order and Secure Boot, and reflash the drive to rule out a bad write. As a last resort, reflash in ISO mode purely to test whether the machine can see the drive at all: DD is still the correct write mode for the real Proxmox install, so once the drive shows up, flash it in DD mode again before installing."
+            }
+          ],
+          "done": "The Proxmox installer's initial screen loaded!"
+        },
+        {
+          "id": "install",
+          "title": "Run the installer",
+          "intro": "Filling out boxes here. One of the boxes erases a disk! So make sure to read that one twice. Reference the cheat sheet below for deeper learning.",
+          "actions": [
+            "Accept the license agreement.",
+            "Target Harddisk: choose the internal disk Proxmox will live on. Everything on that disk is erased.",
+            "Set your country, time zone, and keyboard layout.",
+            "Create the root password and enter a real email address. Make the password strong: you will type it a lot.",
+            "On the network page, set the hostname as an FQDN like pve.home.lan (the cheat sheet decodes those three parts), then confirm the IP address, gateway, and DNS the installer suggests. Write the IP down.",
+            "Click Install and let it run (this may take a while). When it's done it may ask to reboot (or reboot automatically). Reboot and immediately pull the USB drive out so the PC does not try to boot from it again."
+          ],
+          "cheat": [
+            {
+              "title": "Installer choices, decoded",
+              "cols": [
+                "Item",
+                "What it is",
+                "Real world"
+              ],
+              "rows": [
+                [
+                  "License agreement (EULA)",
+                  "The legal terms you accept to use the software: what you may do with it, and what the maker promises and does not.",
+                  "Home users click through. Enterprises route these through legal and procurement before software is allowed in the building."
+                ],
+                [
+                  "Target disk",
+                  "The internal drive Proxmox installs onto. Everything on it is erased and replaced with the Proxmox server's own storage layout.",
+                  "To avoid an irreversible mistake, like wiping the wrong disk, make sure to read this screen carefully and match the disk size before clicking anything."
+                ],
+                [
+                  "FQDN (Fully Qualified Domain Name): pve.home.lan",
+                  "lan is the top-level domain (TLD), home is the second-level domain (your network's domain), and pve is the hostname (this Proxmox PC's own name). Rename pve freely; keep a private ending.",
+                  "Enterprises enforce naming conventions like site-role-number (nyc-hv-01) so a name alone says what and where a server is. Private networks use endings like .lan, .internal, or .home.arpa instead of public domains they do not own."
+                ],
+                [
+                  "Static IP vs DHCP",
+                  "DHCP hands out a dynamic IP, which can change over time. A static IP is fixed, which is better for servers because clients need to know exactly where to reach them.",
+                  "Servers get static IP addresses (or DHCP reservations) in every serious network. This keeps the server reachable at one known address."
+                ]
+              ]
+            }
+          ],
+          "issues": [
+            {
+              "tags": [
+                "Older PC"
+              ],
+              "problem": "The installer cannot find my hard disk",
+              "fix": "Go back into firmware setup and switch the SATA mode to AHCI, then boot the installer again."
+            },
+            {
+              "tags": [
+                "All setups"
+              ],
+              "problem": "After the reboot, the PC boots back into the installer instead of Proxmox",
+              "fix": "The boot process is still looking at the USB drive. Pull the drive when the installer asks for the reboot; if it already looped, remove it and restart. If you set USB first in the boot order earlier, you can now move the internal disk back to the top."
+            }
+          ],
+          "done": "The PC reboots into Proxmox on its own, no USB attached, and shows a login banner with an address ending in :8006."
+        },
+        {
+          "id": "login",
+          "title": "First login, from another device",
+          "intro": "Proxmox has no desktop. You run it from a browser on your normal computer, and this is the moment it starts feeling like a real server.",
+          "actions": [
+            "On your everyday computer, make sure you are on the same network as the server. Guest Wi-Fi does not count, and a VPN on this device can get in the way too: both are covered under issues.",
+            "Browse to https://YOUR-SERVER-IP:8006. The https matters, and so does the :8006.",
+            "Click through the browser's certificate warning (Advanced, then Proceed). It is expected: the server signs its own certificate and your browser has never met it before. The cheat sheet has the full story.",
+            "Log in as root with your password. Leave the realm set to PAM.",
+            "Meet the 'No valid subscription' popup and click OK. It is a reminder, not an error. The free tier is fully functional."
+          ],
+          "cheat": [
+            {
+              "title": "First login, explained",
+              "cols": [
+                "Item",
+                "What it means",
+                "Real world"
+              ],
+              "rows": [
+                [
+                  "The certificate warning",
+                  "Proxmox signs its own certificate, so your browser meets a stranger vouching for itself and objects on principle. On your own network, reaching your own server, proceeding is fine.",
+                  "Enterprises run an internal certificate authority (the AD CS role in Windows shops) so every internal service gets a trusted certificate and employees never see this warning."
+                ],
+                [
+                  "https and :8006",
+                  "The s means the connection is encrypted. :8006 is the numbered door, the port, that Proxmox answers on. Both are required parts of the address.",
+                  "Every network service listens on a port, and knowing the number is half of reaching anything: 443 for the web, 22 for SSH, 8006 for Proxmox."
+                ],
+                [
+                  "The PAM realm",
+                  "PAM is Linux's built-in local login system, and your root account lives there, so the realm box stays on PAM tonight.",
+                  "Proxmox can also plug into central logins later (LDAP or Active Directory), which is how companies avoid managing accounts one server at a time."
+                ],
+                [
+                  "'No valid subscription'",
+                  "A reminder that this install has no paid support subscription attached. It is not an error, and nothing is locked.",
+                  "The popup exists because Proxmox sells enterprise support contracts. The software itself stays fully functional without one."
+                ]
+              ]
+            }
+          ],
+          "issues": [
+            {
+              "tags": [
+                "All setups"
+              ],
+              "problem": "The page will not load at all",
+              "fix": "This one got me. My laptop was on the guest network, and guest isolation quietly blocks devices from seeing each other, so the server might as well not exist. Join the main network and the page appears. Also confirm you typed https and :8006, and ping the server's IP if you can."
+            },
+            {
+              "tags": [
+                "All setups"
+              ],
+              "problem": "Everything looks right, but this device runs a VPN",
+              "fix": "A VPN tunnels your traffic out to another network, so as far as your LAN is concerned, your laptop is no longer sitting next to the server. Pause the VPN, or exclude local addresses if it supports split tunneling, reload the page, and reconnect the VPN afterward."
+            },
+            {
+              "tags": [
+                "All setups"
+              ],
+              "problem": "Connection refused, or the address seems wrong",
+              "fix": "Read the IP straight off the server's own console banner. DHCP may have handed out something different from what you wrote down during the install."
+            }
+          ],
+          "done": "The Proxmox dashboard is on your screen."
+        },
+        {
+          "id": "updates",
+          "title": "Free updates and sensible defaults",
+          "intro": "Out of the box, Proxmox points at the paid enterprise update channel. Two clicks aim it at the free one, and the cheat sheet explains what those channels and ports actually are.",
+          "actions": [
+            "In the web UI, select your node in the left tree, then open Updates, then Repositories.",
+            "Disable the enterprise repository entries.",
+            "Click Add, choose the No-Subscription repository, and confirm.",
+            "Go back to Updates, click Refresh, then Upgrade, and let it finish.",
+            "Two habits while it runs: never expose port 8006 to the internet, and store the server's IP and root password somewhere safe."
+          ],
+          "cheat": [
+            {
+              "title": "Update channels and ports, decoded",
+              "cols": [
+                "Item",
+                "What it is",
+                "Why it matters here"
+              ],
+              "rows": [
+                [
+                  "Enterprise repository",
+                  "The paid update channel: the same software after extra staging and testing, tied to a support subscription and its access key.",
+                  "Without a subscription key it answers 401 Unauthorized, which is exactly why a fresh free install fails to update until you switch channels."
+                ],
+                [
+                  "No-Subscription repository",
+                  "The free public channel. Same Proxmox, with updates arriving a little sooner and less enterprise soak time.",
+                  "The intended channel for home labs and small setups. Production shops pay for the enterprise channel mostly for the extra testing and the support contract."
+                ],
+                [
+                  "'Exposing a port'",
+                  "Port forwarding: opening one numbered door on your router so the internet can reach a device inside. Necessary for things meant to be public, like a self-hosted website or a game server.",
+                  "Admin panels are never meant to be public. Bots scan the whole internet for doors like 8006 around the clock, so admins reach their servers from outside through a VPN instead of opening the door."
+                ]
+              ]
+            }
+          ],
+          "issues": [
+            {
+              "tags": [
+                "All setups"
+              ],
+              "problem": "Refresh or apt fails with a 401 Unauthorized error",
+              "fix": "An enterprise repository is still enabled. Disable it under Repositories and refresh again. This is the single most common first-day error in Proxmox."
+            }
+          ],
+          "done": "Refresh runs without a 401 error and the upgrade completes. Your server is alive, current, and ready for its first VM."
+        }
+      ]
+    }/*__STEPS_DATA_END__*/;
+
+    /* ------------------------------------------------------------
+       Storage wrapper.
+       localStorage works on GitHub Pages and on a double-clicked
+       local file, which are this app's real homes. Some embedded
+       previews sandbox it away, so everything falls back to
+       in-memory state and the app keeps working for the session.
+    ------------------------------------------------------------ */
+    const mem = {};
+    const store = {
+      get(k) { try { const v = localStorage.getItem(k); return v === null ? (k in mem ? mem[k] : null) : v; } catch (e) { return k in mem ? mem[k] : null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (e) { } mem[k] = v; },
+      del(k) { try { localStorage.removeItem(k); } catch (e) { } delete mem[k]; }
+    };
+
+    /* NS prefixes every storage key with this app's id, so two
+       walkthroughs hosted side by side never share progress.
+       WORDS turns the step count into the finish screen's
+       "Seven times." line. */
+    const NS = 'osaat:' + PROJECT.id + ':';
+    const WORDS = { 1: 'Once', 2: 'Twice', 3: 'Three times', 4: 'Four times', 5: 'Five times', 6: 'Six times', 7: 'Seven times', 8: 'Eight times', 9: 'Nine times', 10: 'Ten times', 11: 'Eleven times', 12: 'Twelve times' };
+
+    /* ------------------------------------------------------------
+       STATE: the app's entire memory, one plain object.
+       Every screen is drawn from this and nothing else. If you
+       want to know why something is on screen, the answer is in
+       here; if you want to change what is on screen, change this
+       (through a click handler) and call render().
+    ------------------------------------------------------------ */
+    let state = {
+      mode: null,                 // 'handson' | 'browse' | null (null shows the chooser)
+      hw: 'older',                // which fork toggle side is selected: 'older' | 'newer'
+      cur: 0,                     // index of the step currently on screen
+      method: {},                 // stepId -> chosen method name (which tool pill is on)
+      ticks: {},                  // "stepId|method|idx" -> true for every ticked checkbox
+      done: {},                   // stepId -> true once its Next was clicked with all ticks
+      finished: false             // true only while the congrats screen is showing
+    };
+
+    /* loadState runs once at startup (see the wire-up at the very
+       bottom): it merges any saved progress over the defaults
+       above, then lets a URL like ?mode=browse skip the chooser.
+       saveState is called by every click handler right before
+       render(), so saved progress always matches the screen. */
+    function loadState() {
+      const raw = store.get(NS + 'state');
+      if (raw) { try { state = Object.assign(state, JSON.parse(raw)); } catch (e) { } }
+      const p = new URLSearchParams(location.search).get('mode');
+      if (p === 'browse' || p === 'handson') state.mode = p;
+    }
+    function saveState() { store.set(NS + 'state', JSON.stringify(state)); }
+
+    /* ------------------------------------------------------------
+       DATA HELPERS: read-only questions about the data and state.
+       None of these draw anything or change anything; the render
+       functions below call them to decide what to show.
+    ------------------------------------------------------------ */
+    const steps = PROJECT.steps;
+
+    /* methodNames: the step's tool pill labels (like Rufus and
+       Ventoy), or null when a step has no methods. */
+    function methodNames(s) { return s.methods ? Object.keys(s.methods) : null; }
+
+    /* currentMethod: which tool pill is selected on this step.
+       Falls back to the first method if nothing was chosen yet. */
+    function currentMethod(s) {
+      const names = methodNames(s);
+      if (!names) return null;
+      return state.method[s.id] && names.includes(state.method[s.id]) ? state.method[s.id] : names[0];
+    }
+
+    /* visibleActions: the exact actions the user should see right
+       now, after resolving the chosen method and the fork toggle.
+       Each entry comes back as { text, code }: a forked action
+       object collapses to its "older" or "newer" text here, and
+       "code" (a string, or an object forked "older"/"newer")
+       becomes the typeable block shown under the action text. */
+    function visibleActions(s) {
+      const m = currentMethod(s);
+      const list = m ? s.methods[m].actions : s.actions;
+      return list.map(a => {
+        if (typeof a === 'string') return { text: a, code: null };
+        let code = a.code || null;
+        if (code && typeof code !== 'string') code = code[state.hw] || null;
+        return { text: a[state.hw] || a.text, code: code };
+      });
+    }
+
+    /* cheatTables: always hands back an array, whether the data
+       author wrote one table or a list of them. */
+    function cheatTables(s) {
+      if (!s.cheat) return [];
+      return Array.isArray(s.cheat) ? s.cheat : [s.cheat];
+    }
+
+    /* visibleRows: resolves forked table rows the same way
+       visibleActions resolves forked actions, and drops rows
+       that have no variant for the selected side. */
+    function visibleRows(t) {
+      return t.rows
+        .map(r => Array.isArray(r) ? r : (r[state.hw] || null))
+        .filter(Boolean);
+    }
+
+    /* tickKey: the storage key for one checkbox. It includes the
+       method name, so Rufus ticks and Ventoy ticks live apart
+       and switching pills never lies about progress. */
+    function tickKey(s, idx) { return s.id + '|' + (currentMethod(s) || 'base') + '|' + idx; }
+
+    /* stepTicked: true when every visible action is ticked. This
+       single check is what unlocks the Next button. */
+    function stepTicked(s) { return visibleActions(s).every((_, i) => state.ticks[tickKey(s, i)]); }
+
+    /* frontier: the index of the first not-yet-done step. The Big
+       Picture locks everything past it in Hands-on mode. */
+    function frontier() { let i = 0; while (i < steps.length && state.done[steps[i].id]) i++; return i; }
+
+    function doneCount() { return steps.filter(s => state.done[s.id]).length; }
+
+    /* hwLabel: the short tag word for the selected fork side,
+       read from the data (forkTags) so each app names its own
+       fork. Falls back to generic labels if the data omits it. */
+    function hwLabel() {
+      return (PROJECT.forkTags && PROJECT.forkTags[state.hw]) ||
+        (state.hw === 'older' ? 'Older PC' : 'Newer PC');
+    }
+
+    /* issuesFor: splits a step's issues into the All-setups list
+       (always shown, pinned on top) and the local list (shown
+       only when its tag matches the chosen method or fork side). */
+    function issuesFor(s) {
+      if (!s.issues) return { global: [], local: [] };
+      const m = currentMethod(s);
+      const global = s.issues.filter(i => i.tags.includes('All setups'));
+      const local = s.issues.filter(i => !i.tags.includes('All setups') &&
+        i.tags.some(t => t === m || t === hwLabel()));
+      return { global, local };
+    }
+
+    /* ------------------------------------------------------------
+       TINY DOM HELPERS: the only three shortcuts in the file.
+       $ finds one element. el makes one element (tag, css class,
+       inner HTML) so render code stays short. esc makes any data
+       string safe to place in HTML, which is why every piece of
+       data text passes through it before reaching the page.
+    ------------------------------------------------------------ */
+    const $ = sel => document.querySelector(sel);
+    function el(tag, cls, html) { const n = document.createElement(tag); if (cls) n.className = cls; if (html !== undefined) n.innerHTML = html; return n; }
+    function esc(t) { return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    /* ------------------------------------------------------------
+       CONFIRM MODAL: one reusable yes-or-no dialog.
+       ask() fills the fixed modal skeleton from the body, shows
+       it, and runs onYes only if the warm-colored button is
+       clicked. Reset is currently its only caller.
+    ------------------------------------------------------------ */
+    function ask(title, body, yes, no, onYes) {
+      $('#mTitle').textContent = title;
+      $('#mBody').textContent = body;
+      $('#mYes').textContent = yes;
+      $('#mNo').textContent = no;
+      $('#mwrap').classList.add('show');
+      $('#mYes').onclick = () => { $('#mwrap').classList.remove('show'); onYes(); };
+      $('#mNo').onclick = () => $('#mwrap').classList.remove('show');
+    }
+
+    /* ------------------------------------------------------------
+       RESET: clears step i and everything after it, never
+       anything before it, so rewinding to fix step 3 keeps
+       steps 1 and 2 green. Called by the Reset button on a
+       completed card and by Start over on the finish screen.
+       It always asks first through the confirm modal.
+    ------------------------------------------------------------ */
+    function resetTo(i) {
+      const after = steps.length - i - 1;
+      const title = i === 0 ? 'Start over from step 1?' : 'Reset to step ' + (i + 1) + '?';
+      const body = i === 0
+        ? 'This clears every step and starts the project from zero.'
+        : 'This clears this step and the ' + after + ' after it. No pressure: that is what reset is for.';
+      ask(title, body, i === 0 ? 'Start over' : 'Reset', 'Keep my progress', () => {
+        for (let j = i; j < steps.length; j++) {
+          const s = steps[j];
+          delete state.done[s.id];
+          Object.keys(state.ticks).forEach(k => { if (k.startsWith(s.id + '|')) delete state.ticks[k]; });
+        }
+        state.finished = false;
+        state.cur = i;
+        saveState(); render();
+      });
+    }
+
+    /* ------------------------------------------------------------
+       RENDERERS: each one draws a whole screen or region from
+       state. render() at the bottom decides which of them runs.
+
+       renderHeader: the sticky top bar. Hidden until a mode is
+       chosen, then shows the app name, the mode switch button,
+       the Big Picture button, one LED dot per step (green done,
+       amber ring current), and the progress note under them.
+       Runs on every render so the dots always match state.
+    ------------------------------------------------------------ */
+    function renderHeader() {
+      $('#hdr').hidden = !state.mode;
+      if (!state.mode) return;
+      $('#hproj').textContent = PROJECT.title;
+      $('#modeSwitch').textContent = state.mode === 'handson' ? 'Switch to Just Browsing' : 'Switch to Hands-on';
+      const dots = $('#dots'); dots.innerHTML = '';
+      steps.forEach((s, i) => {
+        const d = el('span', 'dot' + (state.done[s.id] ? ' on' : '') + (i === state.cur && !state.finished ? ' cur' : ''));
+        dots.appendChild(d);
+      });
+      $('#pnote').textContent = state.mode === 'handson'
+        ? doneCount() + ' of ' + steps.length + ' steps complete'
+        : 'Browsing step ' + (state.cur + 1) + ' of ' + steps.length;
+    }
+
+    /* ------------------------------------------------------------
+       CHOOSER: the first screen (state.mode is null). Draws the
+       title, tagline, and the two mode cards. Clicking a card
+       sets state.mode, saves, and re-renders, which is what
+       replaces this screen with the first step card.
+    ------------------------------------------------------------ */
+    function renderChooser() {
+      const m = $('#main'); m.innerHTML = '';
+      const c = el('div', 'choose');
+      c.appendChild(el('div', 'eyebrow', esc(PROJECT.title)));
+      c.appendChild(el('h1', null, 'One Step<br>at a Time'));
+      c.appendChild(el('div', 'proj', esc(PROJECT.tagline)));
+      c.appendChild(el('div', 'tut', 'Actions you tick. Steps you complete.'));
+
+      const modes = el('div', 'modes');
+      const b1 = el('button', 'mode', '<div class="mt">Hands-on</div><div class="ms">I&rsquo;m doing this project.</div>');
+      b1.onclick = () => { state.mode = 'handson'; saveState(); render(); };
+      const b2 = el('button', 'mode', '<div class="mt">Just Browsing</div><div class="ms">Just looking around. Recruiters, start here.</div>');
+      b2.onclick = () => { state.mode = 'browse'; saveState(); render(); };
+      modes.appendChild(b1); modes.appendChild(b2);
+      c.appendChild(modes);
+
+      const demo = el('details', 'demo');
+      demo.innerHTML = '<summary>See it in action</summary><div class="demo-body">' +
+        '<p>Every step is one card. Tick its actions and the next step unlocks.</p>' +
+        '<p>Buttons on a card (tools, cheat sheet, issues I ran into) open extra help only where a step needs it.</p>' +
+        '<p>The Big Picture shows the whole road and how much of it is already green.</p>' +
+        '</div>';
+      c.appendChild(demo);
+
+      c.appendChild(el('div', 'foot', 'A walkthrough built for anyone who loses their place in long guides.'));
+      m.appendChild(c);
+    }
+
+    /* ------------------------------------------------------------
+       STEP CARD: the heart of the app. renderStep draws the
+       current step (state.cur) from top to bottom in the same
+       order every time:
+
+         eyebrow (Step N of M, Complete flag)
+         title and intro
+         What You Need box            (only if the data has prereqs)
+         fork toggle                  (only if any content forks)
+         method pills                 (only if the data has methods)
+         numbered actions             (checkboxes in Hands-on)
+         extras row                   (Cheat sheet / Issues buttons)
+         the open panel, if any
+         checkpoint
+         nav row: Back, Reset, Next
+         gate note                    (Hands-on, until all ticked)
+
+       openPanel remembers which extras panel is unfolded. It is
+       deliberately NOT part of saved state: panels start closed
+       on every visit and close when you move between steps.
+    ------------------------------------------------------------ */
+    let openPanel = null; // 'cheat' | 'issues' | null
+
+    function renderStep() {
+      const m = $('#main'); m.innerHTML = '';
+      const s = steps[state.cur];
+      const hands = state.mode === 'handson';
+      const card = el('section', 'card');
+
+      const eye = el('div', 'step-eyebrow');
+      eye.appendChild(el('span', null, 'Step ' + (state.cur + 1) + ' of ' + steps.length));
+      if (state.done[s.id]) eye.appendChild(el('span', 'done-flag', 'Complete'));
+      card.appendChild(eye);
+
+      card.appendChild(el('h2', null, esc(s.title)));
+      card.appendChild(el('p', 'intro', esc(s.intro)));
+
+      // prerequisites: the What You Need box
+      if (s.prereqs && s.prereqs.length) {
+        const pq = el('div', 'prereq');
+        pq.appendChild(el('h4', null, 'What you need'));
+        const ul = el('ul');
+        s.prereqs.forEach(p => ul.appendChild(el('li', null, esc(p))));
+        pq.appendChild(ul);
+        card.appendChild(pq);
+      }
+
+      // Fork toggle: appears on any step whose content varies by
+      // fork side, detected by an "older" key anywhere in the
+      // step's data (or forced with "hardware": true). The prompt
+      // above the buttons comes from the data (hardwareQuestion).
+      const hasHwContent = s.hardware || JSON.stringify(s).includes('"older"');
+      if (hasHwContent) {
+        const ctrl = el('div', 'ctrl');
+        ctrl.appendChild(el('div', 'ctrl-label', esc(PROJECT.hardwareQuestion || 'This machine is')));
+        const seg = el('div', 'seg');
+        ['older', 'newer'].forEach(h => {
+          const b = el('button', state.hw === h ? 'on' : '', esc(PROJECT.hardwareLabels[h]));
+          b.onclick = () => { state.hw = h; saveState(); render(); };
+          seg.appendChild(b);
+        });
+        ctrl.appendChild(seg);
+        card.appendChild(ctrl);
+      }
+
+      // method pills
+      const names = methodNames(s);
+      if (names) {
+        const ctrl = el('div', 'ctrl');
+        ctrl.appendChild(el('div', 'ctrl-label', esc(s.methodsLabel || 'Pick your method')));
+        const pills = el('div', 'pills');
+        names.forEach(n => {
+          const b = el('button', 'pill' + (currentMethod(s) === n ? ' on' : ''), esc(n));
+          b.onclick = () => { state.method[s.id] = n; saveState(); render(); };
+          pills.appendChild(b);
+        });
+        ctrl.appendChild(pills);
+        card.appendChild(ctrl);
+      }
+
+      // actions, numbered in both modes; each may carry a code block
+      const acts = visibleActions(s);
+      const ul = el('ul', 'actions');
+      acts.forEach((a, i) => {
+        const body = el('span', 'atext', esc(a.text));
+        if (a.code) {
+          const pre = el('pre', 'acode', esc(a.code));
+          // Clicking code selects it for copying; without this,
+          // a click inside the label would toggle the checkbox.
+          pre.onclick = e => e.preventDefault();
+          body.appendChild(pre);
+        }
+        if (hands) {
+          const row = el('label', 'act-row');
+          row.appendChild(el('span', 'anum', String(i + 1)));
+          const inp = document.createElement('input');
+          inp.type = 'checkbox';
+          inp.checked = !!state.ticks[tickKey(s, i)];
+          inp.onchange = () => {
+            if (inp.checked) state.ticks[tickKey(s, i)] = true; else delete state.ticks[tickKey(s, i)];
+            saveState(); render();
+          };
+          row.appendChild(inp);
+          row.appendChild(el('span', 'box'));
+          row.appendChild(body);
+          ul.appendChild(row);
+        } else {
+          const row = el('li', 'act-row');
+          row.appendChild(el('span', 'anum', String(i + 1)));
+          row.appendChild(body);
+          ul.appendChild(row);
+        }
+      });
+      card.appendChild(ul);
+
+      // extras row
+      const iss = issuesFor(s);
+      const issCount = iss.global.length + iss.local.length;
+      const tables = cheatTables(s);
+      if (tables.length || issCount) {
+        const ex = el('div', 'extras');
+        if (tables.length) {
+          const b = el('button', 'xbtn' + (openPanel === 'cheat' ? ' open' : ''), 'Cheat sheet');
+          b.onclick = () => { openPanel = openPanel === 'cheat' ? null : 'cheat'; render(); };
+          ex.appendChild(b);
+        }
+        if (issCount) {
+          const b = el('button', 'xbtn' + (openPanel === 'issues' ? ' open' : ''), 'Issues I ran into (' + issCount + ')');
+          b.onclick = () => { openPanel = openPanel === 'issues' ? null : 'issues'; render(); };
+          ex.appendChild(b);
+        }
+        card.appendChild(ex);
+      }
+
+      if (openPanel === 'cheat' && tables.length) {
+        const p = el('div', 'panel');
+        tables.forEach(t => {
+          const block = el('div', 'tbl');
+          block.appendChild(el('h4', null, esc(t.title)));
+          const wrap = el('div', 'tablewrap');
+          const tb = el('table');
+          const rows = visibleRows(t);
+          tb.innerHTML = '<thead><tr>' + t.cols.map(c => '<th>' + esc(c) + '</th>').join('') + '</tr></thead>' +
+            '<tbody>' + rows.map(r => '<tr>' + r.map((c, ci) =>
+              '<td' + (t.monoLastCol && ci === r.length - 1 ? ' class="mono"' : '') + '>' + esc(c) + '</td>'
+            ).join('') + '</tr>').join('') + '</tbody>';
+          wrap.appendChild(tb); block.appendChild(wrap); p.appendChild(block);
+        });
+        card.appendChild(p);
+      }
+
+      if (openPanel === 'issues' && issCount) {
+        const p = el('div', 'panel');
+        p.appendChild(el('h4', null, 'Issues I ran into'));
+        const renderIssue = it => {
+          const d = el('div', 'issue');
+          const tags = el('div', 'tags');
+          it.tags.forEach(t => tags.appendChild(el('span', 'tag' + (t === 'All setups' ? ' global' : ''), esc(t))));
+          d.appendChild(tags);
+          d.appendChild(el('div', 'prob', esc(it.problem)));
+          d.appendChild(el('div', 'fix', esc(it.fix)));
+          p.appendChild(d);
+        };
+        iss.global.forEach(renderIssue);
+        iss.local.forEach(renderIssue);
+        card.appendChild(p);
+      }
+
+      // checkpoint
+      const met = hands && stepTicked(s);
+      const cp = el('div', 'checkpoint' + (met ? ' met' : ''));
+      cp.appendChild(el('div', 'cp-eyebrow', met ? 'Checkpoint met' : 'Checkpoint'));
+      cp.appendChild(el('div', 'cp-text', 'You&rsquo;re done when: ' + esc(s.done)));
+      card.appendChild(cp);
+
+      // nav: Back left, Reset middle, Next right
+      const nav = el('div', 'nav');
+      const back = el('button', 'ghost', 'Back');
+      back.disabled = state.cur === 0;
+      back.onclick = () => { state.cur--; openPanel = null; saveState(); render(); };
+      nav.appendChild(back);
+
+      if (hands && (state.done[s.id] || stepTicked(s))) {
+        const rs = el('button', 'resetbtn', 'Reset');
+        rs.onclick = () => resetTo(state.cur);
+        nav.appendChild(rs);
+      } else {
+        nav.appendChild(el('span'));
+      }
+
+      const last = state.cur === steps.length - 1;
+      const next = el('button', 'next' + (last ? ' finish' : ''), last ? 'Finish' : 'Next step');
+      if (hands) {
+        next.disabled = !stepTicked(s);
+        next.onclick = () => {
+          state.done[s.id] = true;
+          openPanel = null;
+          if (last) { state.finished = true; } else { state.cur++; }
+          saveState(); render();
+        };
+      } else {
+        next.onclick = () => {
+          openPanel = null;
+          if (last) { state.finished = true; } else { state.cur++; }
+          saveState(); render();
+        };
+      }
+      nav.appendChild(next);
+      card.appendChild(nav);
+
+      if (hands && !stepTicked(s)) {
+        card.appendChild(el('div', 'gate-note', 'Tick every action to unlock the next step.'));
+      }
+
+      m.appendChild(card);
+    }
+
+    /* ------------------------------------------------------------
+       FINISH SCREENS: drawn when state.finished is true.
+       Hands-on gets the all-green congrats (the motto, the
+       step-count line from WORDS, and the congratsAfter line
+       from the data pointing at what comes next). Just Browsing
+       gets the end-of-the-road card offering the mode switch.
+    ------------------------------------------------------------ */
+    function renderEnd() {
+      const m = $('#main'); m.innerHTML = '';
+      const c = el('div', 'congrats');
+      if (state.mode === 'handson') {
+        const n = steps.length;
+        c.appendChild(el('div', 'eyebrow', 'All steps green'));
+        c.appendChild(el('h1', null,
+          '<span>You never did a whole project.</span>' +
+          '<span>You just did one step.</span>' +
+          '<span class="count">' + esc(WORDS[n] || n + ' times') + '.</span>'));
+        c.appendChild(el('p', 'after', esc(PROJECT.congratsAfter || 'On to the next project.')));
+        const row = el('div', 'row');
+        const back = el('button', 'ghost', 'Back');
+        back.onclick = () => { state.finished = false; state.cur = steps.length - 1; saveState(); render(); };
+        const again = el('button', 'resetbtn', 'Start over');
+        again.onclick = () => resetTo(0);
+        const bp = el('button', 'hbtn', 'The Big Picture');
+        bp.onclick = openBP;
+        row.appendChild(back); row.appendChild(again); row.appendChild(bp);
+        c.appendChild(row);
+      } else {
+        c.appendChild(el('div', 'eyebrow', 'End of the road'));
+        c.appendChild(el('h1', null, '<span>That is the whole project,</span><span>seen from above.</span>'));
+        c.appendChild(el('p', 'after', 'Switch to Hands-on when you are ready to walk it for real.'));
+        const row = el('div', 'row');
+        const back = el('button', 'ghost', 'Back');
+        back.onclick = () => { state.finished = false; state.cur = steps.length - 1; saveState(); render(); };
+        const sw = el('button', 'next', 'Switch to Hands-on');
+        sw.onclick = () => { state.mode = 'handson'; state.finished = false; state.cur = frontier(); saveState(); render(); };
+        row.appendChild(back); row.appendChild(sw);
+        c.appendChild(row);
+      }
+      m.appendChild(c);
+    }
+
+    /* ------------------------------------------------------------
+       BIG PICTURE: the overlay listing every step with its LED,
+       opened from the header (and from the finish screen). Rows
+       past the frontier are disabled in Hands-on so nobody jumps
+       ahead; Just Browsing roams free. Clicking an unlocked row
+       jumps state.cur there and closes the overlay.
+    ------------------------------------------------------------ */
+    function openBP() {
+      const list = $('#bpList'); list.innerHTML = '';
+      const hands = state.mode === 'handson';
+      const f = frontier();
+      $('#bpSub').textContent = hands
+        ? doneCount() + ' of ' + steps.length + ' steps complete'
+        : 'Every step, in order. Tap any of them.';
+      steps.forEach((s, i) => {
+        const row = el('button', 'bp-row');
+        const isDone = !!state.done[s.id];
+        const isCur = i === state.cur && !state.finished;
+        row.appendChild(el('span', 'led' + (isDone ? ' on' : isCur ? ' cur' : '')));
+        row.appendChild(el('span', 'bp-num', String(i + 1)));
+        row.appendChild(el('span', 'bp-title', esc(s.title)));
+        row.appendChild(el('span', 'bp-state' + (isDone ? ' done' : ''), isDone ? 'Done' : isCur ? 'Here' : hands && i > f ? 'Locked' : ''));
+        if (hands && i > f) {
+          row.disabled = true;
+          row.title = 'Finish the current step to unlock this one.';
+        } else {
+          row.onclick = () => { state.cur = i; state.finished = false; openPanel = null; saveState(); closeBP(); render(); };
+        }
+        list.appendChild(row);
+      });
+      $('#bp').classList.add('show');
+    }
+    function closeBP() { $('#bp').classList.remove('show'); }
+
+    /* ------------------------------------------------------------
+       ROOT RENDER: the traffic cop. Every click handler in the
+       file ends by calling this. It repaints the header, then
+       picks exactly one screen: no mode yet means the chooser,
+       finished means the congrats screen, otherwise the current
+       step card.
+    ------------------------------------------------------------ */
+    function render() {
+      renderHeader();
+      if (!state.mode) { renderChooser(); return; }
+      if (state.finished) { renderEnd(); return; }
+      renderStep();
+    }
+
+    /* ============================================================
+       HOW TO EXTEND: the recipes for the edits you will actually
+       want to make. Every recipe below was tested on this file.
+
+       Add a step: append one more step object to the "steps"
+       array between the data markers. That is the whole job: the
+       header dots, the Big Picture list, the gating, and the
+       finish count all read steps.length and adjust themselves.
+
+       Add an action to a step: append a string (or a forked
+       object with "text" plus "older"/"newer") to that step's
+       "actions" array. Note for a shipped app: ticks are saved
+       by position, so INSERTING an action in the middle shifts
+       which saved tick belongs to which line. Appending at the
+       end is always safe; if you must insert mid-list, expect
+       returning users to re-tick that step.
+
+       Add a cheat table or an issue: follow the shapes in the
+       PROJECT DATA comment above. New issues need a "tags" array
+       containing "All setups" or one of the forkTags words.
+
+       Add typeable code to an action: turn the action into an
+       object and give it "code" next to "text". The engine shows
+       the code in a dark block under the action, exactly as
+       typed, line breaks included.
+
+       Add a button to every step card: in renderStep(), find the
+       extras row (search for 'extras'). The pattern every button
+       in this file follows:
+           const b = el('button', 'xbtn', 'My button');
+           b.onclick = () => { openPanel = 'mypanel'; render(); };
+           ex.appendChild(b);
+       Then add an `if (openPanel === 'mypanel')` block next to
+       the existing cheat and issues panel blocks to draw its
+       content, and style anything new inside the style block.
+
+       Change looks only: everything visual lives in the style
+       block at the top. Class names in the render code match the
+       selectors there one to one.
+
+       Why your browser-console edits disappear: render() rebuilds
+       the main area from state on every click. Make changes here
+       in the file, not in the live page.
+       ============================================================ */
+
+    /* ------------------------------------------------------------
+       WIRE-UP: the only lines that run at load, in this order.
+       1. The browser tab title takes the project's name from the
+          data, so the engine file needs no per-app edits.
+       2. The four permanent header and overlay buttons get their
+          click handlers (everything inside #main gets handlers
+          during render instead, because it is rebuilt each time).
+       3. loadState() restores saved progress, render() draws the
+          first screen, and from here on the click -> state ->
+          render loop owns the app.
+    ------------------------------------------------------------ */
+    document.title = 'One Step at a Time: ' + PROJECT.title;
+
+    $('#bpBtn').onclick = openBP;
+    $('#bpClose').onclick = closeBP;
+    $('#bp').onclick = e => { if (e.target === $('#bp')) closeBP(); };
+    $('#modeSwitch').onclick = () => {
+      state.mode = state.mode === 'handson' ? 'browse' : 'handson';
+      state.finished = false;
+      if (state.mode === 'handson') state.cur = Math.min(state.cur, frontier());
+      saveState(); render();
+    };
+
+    loadState();
+    render();
+  </script>
+</body>
+
+</html>
