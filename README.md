@@ -1,4 +1,4 @@
-# Proxmox-old-pc
+# proxmox-old-pc
 Interactive walkthrough app: Install Proxmox on an old PC, one step at a time. Runs offline, docs generated from the app's own data (single source of truth).
 
 
@@ -10,7 +10,7 @@ Interactive walkthrough app: Install Proxmox on an old PC, one step at a time. R
 
 # Install Proxmox on an Old PC: One Step at a Time
 
-**[Try it live](https://luigalve.github.io/Proxmox-old-pc/)** &middot; [Take the full guide as one file](docs/full-walkthrough.md)
+**[Try it live](https://luigalve.github.io/proxmox-old-pc/)** &middot; [Take the full guide as one file](docs/full-walkthrough.md)
 
 An interactive walkthrough that takes a beginner from a forgotten desktop to a running Proxmox server. Tick the actions, complete the step, watch the map turn green. 
 <sub>Hands-on mode won't allow you to move on to another step until all actions are ticked off | Just Browsing lets you read the whole journey in two minutes. </sub>One HTML file, runs offline with a double-click, no installs.
