@@ -1,5 +1,5 @@
 # proxmox-old-pc
-Interactive walkthrough app: Install Proxmox on an old PC, one step at a time. Runs offline, docs generated from the app's own data (single source of truth).
+Interactive walkthrough app: Install Proxmox on an old PC, one step at a time. 
 
 
 <!-- Repo README for Proxmox-old-pc.
@@ -12,8 +12,15 @@ Interactive walkthrough app: Install Proxmox on an old PC, one step at a time. R
 
 **[Try it live](https://luigalve.github.io/proxmox-old-pc/)** &middot; [Take the full guide as one file](docs/full-walkthrough.md)
 
-An interactive walkthrough that takes a beginner from a forgotten desktop to a running Proxmox server. Tick the actions, complete the step, watch the map turn green. 
-<sub>Hands-on mode won't allow you to move on to another step until all actions are ticked off | Just Browsing lets you read the whole journey in two minutes. </sub>One HTML file, runs offline with a double-click, no installs.
+An interactive walkthrough that takes a beginner from a forgotten desktop to a running Proxmox server.
+<br>
+
+One HTML file, runs offline with a double-click, no installs.<br>
+Tick the actions, complete the step, watch the map turn green.<br>
+
+<sub>Hands-on mode won't allow you to move on to another step until all actions are ticked off | Just Browsing lets you read the whole journey in two minutes. </sub>
+<br>
+
 
 Everything in it comes from my own install on a Dell Inspiron 620: every fix in the troubleshooting panels is a problem I actually hit, next to what actually solved it.
 
